@@ -95,6 +95,7 @@ export default function AppNew() {
               selectedId={selectedId}
               CloseMovieHandler={CloseMovieHandler}
               WatchedMovieHandler={WatchedMovieHandler}
+              watched={watched}
             />
           ) : (
             <>
@@ -113,10 +114,19 @@ export default function AppNew() {
 // function MovieDetails() {
 //   return <p>{selectedId}</p>;
 // }
-function MovieDetails({ CloseMovieHandler, selectedId, WatchedMovieHandler }) {
+function MovieDetails({
+  CloseMovieHandler,
+  selectedId,
+  WatchedMovieHandler,
+  watched,
+}) {
   const [movie, setMovie] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [userRating, setUserRating] = useState(0);
+  const isWatched = watched.map((movie) => movie.imdbID)?.includes(selectedId);
+  const ratingDisplayInDetails = watched.find(
+    (movie) => movie.imdbID === selectedId
+  )?.userRating;
 
   useEffect(
     function () {
@@ -187,11 +197,24 @@ function MovieDetails({ CloseMovieHandler, selectedId, WatchedMovieHandler }) {
             </div>
           </header>
           <section>
-            <StarRating maxRating={10} size={24} onUserRating={setUserRating} />
-            {userRating > 0 && (
-              <button className="btn-add" onClick={onAddWatchedList}>
-                + Add to List
-              </button>
+            {!isWatched ? (
+              <>
+                <StarRating
+                  maxRating={10}
+                  size={24}
+                  onUserRating={setUserRating}
+                />
+                {userRating > 0 && (
+                  <button className="btn-add" onClick={onAddWatchedList}>
+                    + Add to List
+                  </button>
+                )}{" "}
+              </>
+            ) : (
+              <p>
+                You watched this movie already and rated it{" "}
+                {ratingDisplayInDetails} <span>⭐</span>
+              </p>
             )}
             <p>
               <em>{plot}</em>
