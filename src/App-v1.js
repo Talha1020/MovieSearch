@@ -12,10 +12,10 @@ export default function AppNew() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState("");
-  const controller = new AbortController();
-  // console.log(selectedId);
+
   useEffect(
     function () {
+      const controller = new AbortController();
       async function fetchMovies() {
         try {
           setIsLoading(true);
