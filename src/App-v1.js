@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StarRating from "./starRating";
 
 const average = (arr) =>
@@ -6,13 +6,51 @@ const average = (arr) =>
 const KEY = "e015e74c";
 
 export default function AppNew() {
-  const [watched, setWatched] = useState([]);
-  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const watch = localStorage.getItem("watched");
+    return JSON.parse(watch);
+  });
+  const [movies, setMovies] = useState(function () {
+    const movieInit = localStorage.getItem("watched");
+    return JSON.parse(movieInit);
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState("");
 
+  function OpenMovieHandler(Id) {
+    setSelectedId((selectedId) => (selectedId === Id ? "" : Id));
+  }
+  function CloseMovieHandler(Id) {
+    setSelectedId("");
+  }
+  function WatchedMovieHandler(watchedMovies) {
+    setWatched((watched) => [...watched, watchedMovies]);
+  }
+  function HandleDeleteMovie(DesiredDeleteId) {
+    setWatched((watched) =>
+      watched.filter((movie) => movie.imdbID !== DesiredDeleteId)
+    );
+  }
+
+  useEffect(function () {
+    function callback(e) {
+      if (e.code === "Escape") CloseMovieHandler();
+    }
+    document.addEventListener("keydown", callback);
+
+    return function (e) {
+      document.removeEventListener("keydown", callback);
+    };
+  }, []);
+
+  useEffect(
+    function () {
+      localStorage.setItem("watched", JSON.stringify(watched));
+    },
+    [watched]
+  );
   useEffect(
     function () {
       const controller = new AbortController();
@@ -51,20 +89,6 @@ export default function AppNew() {
     [query]
   );
 
-  function OpenMovieHandler(Id) {
-    setSelectedId((selectedId) => (selectedId === Id ? "" : Id));
-  }
-  function CloseMovieHandler(Id) {
-    setSelectedId("");
-  }
-  function WatchedMovieHandler(watchedMovies) {
-    setWatched((watched) => [...watched, watchedMovies]);
-  }
-  function HandleDeleteMovie(DesiredDeleteId) {
-    setWatched((watched) =>
-      watched.filter((movie) => movie.imdbID !== DesiredDeleteId)
-    );
-  }
   return (
     <>
       <NAV>
@@ -133,7 +157,13 @@ function MovieDetails({
   const ratingDisplayInDetails = watched.find(
     (movie) => movie.imdbID === selectedId
   )?.userRating;
-
+  const myCount = useRef(0);
+  useEffect(
+    function () {
+      if (userRating) myCount.current++;
+    },
+    [userRating]
+  );
   useEffect(
     function () {
       async function FetchMovieDetails() {
@@ -174,6 +204,7 @@ function MovieDetails({
       runtime: Number(runtime.split(" ").at(0)),
       imdbRating: Number(imdbRating),
       userRating,
+      counterRating: myCount.current,
     };
 
     WatchedMovieHandler(newWatchedMovie);
@@ -274,6 +305,21 @@ function LOGO() {
 }
 
 function SEARCH({ query, setQuery }) {
+  const InputEl = useRef(null);
+  useEffect(
+    function () {
+      function callback(e) {
+        if (document.activeElement === InputEl.current) return;
+        if (e.code === "Enter") {
+          InputEl.current.focus();
+          setQuery("");
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+    },
+    [setQuery]
+  );
   return (
     <input
       className="search"
@@ -281,6 +327,7 @@ function SEARCH({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={InputEl}
     />
   );
 }
