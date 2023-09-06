@@ -1,22 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import StarRating from "./starRating";
+import { useMovies } from "./useMovies";
+import { useLocalStorage } from "./useLocalStorage";
+import { useKey } from "./useKey";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
-const KEY = "e015e74c";
 
+const KEY = "e015e74c";
 export default function AppNew() {
-  const [watched, setWatched] = useState(function () {
-    const watch = localStorage.getItem("watched");
-    return JSON.parse(watch);
-  });
-  const [movies, setMovies] = useState(function () {
-    const movieInit = localStorage.getItem("watched");
-    return JSON.parse(movieInit);
-  });
-  const [isLoading, setIsLoading] = useState(false);
+  // const [watched, setWatched] = useState(function () {
+  //   const watch = localStorage.getItem("watched");
+  //   return JSON.parse(watch);
+  // });
+  const [watched, setWatched] = useLocalStorage([]);
+
   const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState("");
 
   function OpenMovieHandler(Id) {
@@ -33,61 +32,56 @@ export default function AppNew() {
       watched.filter((movie) => movie.imdbID !== DesiredDeleteId)
     );
   }
+  useKey("Escape", CloseMovieHandler);
+  // useEffect(function () {
+  //   function callback(e) {
+  //     if (e.code === "Escape") CloseMovieHandler();
+  //   }
+  //   document.addEventListener("keydown", callback);
 
-  useEffect(function () {
-    function callback(e) {
-      if (e.code === "Escape") CloseMovieHandler();
-    }
-    document.addEventListener("keydown", callback);
+  //   return function (e) {
+  //     document.removeEventListener("keydown", callback);
+  //   };
+  // }, []);
 
-    return function (e) {
-      document.removeEventListener("keydown", callback);
-    };
-  }, []);
+  const { isLoading, movies, error } = useMovies(query);
+  // useEffect(
+  //   function () {
+  //     const controller = new AbortController();
+  //     async function fetchMovies() {
+  //       try {
+  //         setIsLoading(true);
+  //         setError("");
+  //         const res = await fetch(
+  //           `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+  //           { signal: controller.signal }
+  //         );
 
-  useEffect(
-    function () {
-      localStorage.setItem("watched", JSON.stringify(watched));
-    },
-    [watched]
-  );
-  useEffect(
-    function () {
-      const controller = new AbortController();
-      async function fetchMovies() {
-        try {
-          setIsLoading(true);
-          setError("");
-          const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
-            { signal: controller.signal }
-          );
+  //         if (!res.ok) throw new Error("");
+  //         const data = await res.json();
 
-          if (!res.ok) throw new Error("");
-          const data = await res.json();
+  //         if (data.Response === "False") throw new Error("");
+  //         setMovies(data.Search);
+  //         setError("");
+  //       } catch (err) {
+  //         if (err.name !== "AbortError") setError(err.message);
+  //       } finally {
+  //         setIsLoading(false);
+  //       }
+  //     }
+  //     if (query.length < 3) {
+  //       setError("");
+  //       setMovies([]);
+  //       return;
+  //     }
 
-          if (data.Response === "False") throw new Error("");
-          setMovies(data.Search);
-          setError("");
-        } catch (err) {
-          if (err.name !== "AbortError") setError(err.message);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-      if (query.length < 3) {
-        setError("");
-        setMovies([]);
-        return;
-      }
-
-      fetchMovies();
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
-  );
+  //     fetchMovies();
+  //     return function () {
+  //       controller.abort();
+  //     };
+  //   },
+  //   [query]
+  // );
 
   return (
     <>
@@ -306,20 +300,26 @@ function LOGO() {
 
 function SEARCH({ query, setQuery }) {
   const InputEl = useRef(null);
-  useEffect(
-    function () {
-      function callback(e) {
-        if (document.activeElement === InputEl.current) return;
-        if (e.code === "Enter") {
-          InputEl.current.focus();
-          setQuery("");
-        }
-      }
 
-      document.addEventListener("keydown", callback);
-    },
-    [setQuery]
-  );
+  useKey("Enter", function callback() {
+    if (document.activeElement === InputEl.current) return;
+    InputEl.current.focus();
+    setQuery("");
+  });
+  // useEffect(
+  //   function () {
+  // function callback(e) {
+  //   if (document.activeElement === InputEl.current) return;
+  //   if (e.code === "Enter") {
+  //     InputEl.current.focus();
+  //     setQuery("");
+  //   }
+  // }
+
+  //     document.addEventListener("keydown", callback);
+  //   },
+  //   [setQuery]
+  // );
   return (
     <input
       className="search"
